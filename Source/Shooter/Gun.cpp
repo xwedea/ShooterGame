@@ -45,12 +45,18 @@ void AGun::PullTrigger() {
 	OwnerController->GetPlayerViewPoint(Location, Rotation);
 	
 	FVector EndLoc = Location + Rotation.Vector() * MaxRange;
+	
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(this);
+	Params.AddIgnoredActor(GetOwner());
+
 	FHitResult Hit;
 	bool bHit = GetWorld()->LineTraceSingleByChannel(
 		Hit,
 		Location,
 		EndLoc,
-		ECollisionChannel::ECC_GameTraceChannel1
+		ECollisionChannel::ECC_GameTraceChannel1,
+		Params
 	);	
 	// DrawDebugLine(GetWorld(), Location, EndLoc, FColor::Purple, true);
 
@@ -69,9 +75,6 @@ void AGun::PullTrigger() {
 		if (HitActor) {
 			HitActor->TakeDamage(Damage, DamageEvent, OwnerController, this);
 		}
-	}
-	else {
-		
 	}
 
 	UE_LOG(LogTemp, Display, TEXT("PullTrigger(), bHit=%d"), bHit);

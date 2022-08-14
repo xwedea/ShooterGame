@@ -3,6 +3,8 @@
 
 #include "ShooterCharacter.h"
 #include "Gun.h"
+#include "Components/CapsuleComponent.h"
+#include "ShooterGameModeBase.h"
 
 // Sets default values
 AShooterCharacter::AShooterCharacter()
@@ -20,6 +22,8 @@ void AShooterCharacter::BeginPlay()
 	Gun->SetOwner(this);
 	GetMesh()->HideBoneByName("weapon_r", EPhysBodyOp::PBO_None);
 	Gun->AttachToComponent(GetMesh(), FAttachmentTransformRules::KeepRelativeTransform, "WeaponSocket");
+
+	Health = MaxHealth;
 
 }
 
@@ -50,6 +54,31 @@ void AShooterCharacter::Shoot() {
 	// UE_LOG(LogTemp, Warning, TEXT("Shoot()"));
 	Gun->PullTrigger();
 	
+}
+
+float AShooterCharacter::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) {
+	float DamageTaken = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+
+	float DamageToApply = FMath::Min(DamageTaken, Health);
+	Health -= DamageToApply;
+	UE_LOG(LogTemp, Warning, TEXT("Health: %f"), Health);
+
+	if (!IsAlive()) {
+		AShooterGameModeBase * GameMode = GetWorld()->GetAuthGameMode<AShooterGameModeBase>();
+		if (GameMode) {
+			GameMode->PawnKilled(this);
+		}
+ 
+		// DetachFromControllerPendingDestroy();
+		GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	}
+
+	return DamageToApply;
+}
+
+bool AShooterCharacter::IsAlive() const {
+	return (Health > 0);
 }
 
 void AShooterCharacter::LookUp_Controller(float AxisVal) {
